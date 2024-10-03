@@ -1,0 +1,349 @@
+/*
+ * @author Ezekiel Chow
+ * Expense Database
+ * CIS 22C, Final Project
+ */
+
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.util.Scanner;
+import java.io.File;
+import java.io.IOException;
+
+public class ExpenseDatabase {
+
+	private final int NUM_EXPENSES = 10;
+
+	Hash<Expense> ht = new Hash<>(NUM_EXPENSES);
+	BST<Expense> bst1 = new BST<>();
+	BST<Expense> bst2 = new BST<>();
+
+	public static void main(String[] args) throws IOException, java.io.FileNotFoundException {
+
+		// Making a File, scanning all of the user data and storing them in a list.
+
+		File file = new File("users.txt");
+		Scanner userScanner = new Scanner(file);
+		List<User> userList = new List<User>();
+		ExpenseDatabase database = new ExpenseDatabase();
+
+		String textFile = "";
+
+		populateCurrentUserList(userList, userScanner, file);
+
+		System.out.println("Welcome to the Expense Tracker!");
+
+		Scanner userInput = new Scanner(System.in);
+
+		String choice;
+		boolean check = true;
+		String expenseID;
+		String expenseName;
+		String expenseType;
+		String date;
+		String time;
+		double cost;
+		while (check) {
+			choice = choice();
+
+			if (choice.equalsIgnoreCase("A")) {
+				System.out.println("Logging in...");
+				System.out.print("Enter your username: ");
+				String username = userInput.nextLine();
+				System.out.print("Enter your password: ");
+				String password = userInput.nextLine();
+
+				userList.placeIterator();
+				for (int i = 0; i < userList.getLength(); i++) {
+					if (userList.getIterator().getUsername().equals(username)
+							&& userList.getIterator().getPassword().equals(password)) {
+						textFile = userList.getIterator().getTextFile();
+						File uf = new File(textFile);
+
+						Scanner inFile = new Scanner(uf);
+
+						// adding the persons expenses into a hash table.
+
+						while (inFile.hasNextLine()) {
+							expenseID = inFile.nextLine();
+							expenseName = inFile.nextLine();
+							expenseType = inFile.nextLine();
+							date = inFile.nextLine();
+							time = inFile.nextLine();
+							cost = inFile.nextDouble();
+							if (inFile.hasNextLine()) {
+								inFile.nextLine();
+
+							}
+							if (inFile.hasNextLine()) {
+								inFile.nextLine();
+							}
+
+							Expense addExpense = new Expense(expenseID, expenseName, expenseType, date, time, cost);
+							// Expense2 addExpense2 = new Expense2(expenseID, expenseName, expenseType,
+							// date, time, cost);
+
+							database.ht.insert(addExpense);
+							database.bst1.insert(addExpense);
+							database.bst2.insert(addExpense);
+							// database.bst2.insert(addExpense2);
+
+						}
+						System.out.println();
+
+						while (check) {
+
+							choice = choiceTwo();
+
+							if (choice.equalsIgnoreCase("D")) {
+								choice = displayPrint();
+
+								if (choice.equalsIgnoreCase("U")) {
+									System.out.println(database.ht);
+								}
+
+								else if (choice.equalsIgnoreCase("S")) {
+									database.bst1.inOrderPrint();
+								}
+
+								else if (choice.equalsIgnoreCase("E")) {
+									database.bst2.inOrderPrint();
+
+								} else if (choice.equalsIgnoreCase("O")) {
+									break;
+								}
+
+							} else if (choice.equalsIgnoreCase("A")) {
+								Expense e = addExpense();
+								database.ht.insert(e);
+								database.bst1.insert(e);
+								database.bst2.insert(e);
+
+							} else if (choice.equalsIgnoreCase("R")) {
+								System.out.println("\nRemoving an Expense!\n");
+								System.out.print("Enter the Expense Number: ");
+								expenseID = userInput.nextLine();
+								System.out.print("Enter the Expense Name: ");
+								expenseName = userInput.nextLine();
+								Expense ex = new Expense(expenseID, expenseName, "", "", "", 0);
+								int h = database.ht.search(ex);
+
+								if (h == -1) {
+									System.out.println("\nI cannot find " + expenseID + ": " + expenseName
+											+ " in your Expense Tracker.");
+
+								} else {
+									database.ht.remove(ex);
+									database.bst1.remove(ex);
+									database.bst2.remove(ex);
+									System.out.println("\n" + expenseID + ": " + expenseName + " was removed!\n");
+								}
+
+							} else if (choice.equalsIgnoreCase("S")) {
+								System.out.println("\nSearching for an Expense!\n");
+								System.out.print("Enter the Expense Number: ");
+								expenseID = userInput.nextLine();
+								System.out.print("Enter the Expense Name: ");
+								expenseName = userInput.nextLine();
+								Expense e2 = new Expense(expenseID, expenseName, "", "", "", 0);
+								int j = database.ht.search(e2);
+
+								if (j == -1) {
+									System.out.println(
+											"\n" + expenseID + ": " + expenseName + " is not your Expense Tracker.");
+
+								} else {
+									System.out.println(
+											"\n" + expenseID + ": " + expenseName + " is in your Expense Tracker!");
+								}
+							} else if (choice.equalsIgnoreCase("X")) {
+								check = false;
+							}
+
+						}
+
+					} else {
+						userList.advanceIterator();
+					}
+					if (userList.offEnd()) {
+						System.out.println("\nInvalid username or password, please try again or create an Account.");
+					}
+				}
+
+			}
+
+			else if (choice.equalsIgnoreCase("B")) {
+
+				System.out.println(
+						"\nYou selected: Create an Account!\n\nPlease follow the steps below to set up your new Expense Tracker!\n");
+				System.out.print("Enter your name: ");
+				String name = userInput.nextLine();
+
+				String newUserName = "";
+				while (true) {
+					System.out.print("Enter your username: ");
+					newUserName = userInput.nextLine();
+
+					if (usernameTaken(newUserName, userList)) {
+						System.out.println("Sorry, this username is already taken! Please try a different username.");
+					} else {
+						break;
+					}
+				}
+
+				String newPassword;
+				String confPassword;
+				while (true) {
+					System.out.print("Enter your password: ");
+					newPassword = userInput.nextLine();
+					System.out.print("Please confirm your password: ");
+					confPassword = userInput.nextLine();
+
+					if (!(newPassword.equals(confPassword))) {
+						System.out.println("The password does not match please try again!");
+
+					} else {
+						break;
+					}
+
+				}
+
+				String newFileName = newUserName+".txt";
+				userList.addLast(new User(name, newUserName, newPassword, newFileName));
+				PrintWriter pw = new PrintWriter(new FileOutputStream(file, false));
+				pw.print(userList.toString());
+				File newFile = new File(newFileName);
+				newFile.createNewFile();
+				pw.close();
+
+			}
+		}
+
+		System.out.println("\nGoodbye!");
+
+	}
+
+	public static boolean usernameTaken(String userName, List<User> userList) {
+		userList.placeIterator();
+		for (int i = 0; i < userList.getLength(); i++) {
+			if (userList.getIterator().getUsername().equals(userName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Reads in the customer's information from a text file and adds it to a Linked
+	 * List of type User
+	 * 
+	 * @param userList    The List of type User
+	 * @param userScanner The Scanner used to read in the data
+	 * @param file        The data of the user stored in this file
+	 */
+	public static void populateCurrentUserList(List<User> userList, Scanner userScanner, File file) {
+		while (userScanner.hasNextLine()) {
+
+			String name = userScanner.nextLine();
+			String username = userScanner.nextLine();
+			String password = userScanner.nextLine();
+			String textFileName = userScanner.nextLine();
+
+			User user = new User(name, username, password, textFileName);
+			userList.addLast(user);
+		}
+
+	}
+
+	public static String choice() {
+		String choice1 = "";
+		boolean choiceFlag = false;
+
+		while (!choiceFlag) {
+			System.out.println("\nPlease select from one of the following options:");
+			System.out.println("\nA: Log in \nB: Create an Account\nX: Exit\n");
+			System.out.print("Enter your choice: ");
+			Scanner input = new Scanner(System.in);
+			choice1 = input.next();
+
+			if (choice1.equalsIgnoreCase("A") || choice1.equalsIgnoreCase("B") || choice1.equalsIgnoreCase("X")) {
+				choiceFlag = true;
+			} else {
+				System.out.println("\nInvalid Selection! ");
+			}
+		}
+		return choice1;
+	}
+
+	public static String choiceTwo() {
+		String choice1 = "";
+		boolean choiceFlag = false;
+
+		while (!choiceFlag) {
+			System.out.println("Please select from the following options:");
+			System.out.println(
+					"\nD: Display Expenses\nA: Add to Expenses\nR: Remove from Expenses\nS: Search for Expense \nX: Exit");
+			System.out.println();
+			System.out.print("Enter your choice: ");
+			Scanner input = new Scanner(System.in);
+			choice1 = input.next();
+
+			if (choice1.equalsIgnoreCase("A") || choice1.equalsIgnoreCase("D") || choice1.equalsIgnoreCase("S")
+					|| choice1.equalsIgnoreCase("R") || choice1.equalsIgnoreCase("X")) {
+				choiceFlag = true;
+			} else {
+				System.out.println("\nInvalid Selection! ");
+			}
+		}
+		return choice1;
+
+	}
+
+	public static String displayPrint() {
+		String choice1 = "";
+		boolean choiceFlag = false;
+		while (!choiceFlag) {
+			System.out.println(
+					"\nYou chose Display Expenses!\n\nPlease select one of the following display options:\n\nU:Unsorted\nS:Sorted by Expense Number"
+							+ " Number\nE:Sorted by Expense Type\nO:Go Back\n");
+			System.out.print("Enter your choice: ");
+			Scanner input = new Scanner(System.in);
+			choice1 = input.nextLine();
+
+			if (choice1.equalsIgnoreCase("U") || choice1.equalsIgnoreCase("S") || choice1.equalsIgnoreCase("E")
+					|| choice1.equalsIgnoreCase("O")) {
+				choiceFlag = true;
+			} else {
+				System.out.println("Invalid choice!");
+			}
+		}
+		return choice1;
+	}
+
+	public static Expense addExpense() {
+		Scanner input = new Scanner(System.in);
+		String expenseID;
+		String expenseName;
+		String expenseType;
+		String date;
+		String time;
+		double cost;
+		System.out.println("\nAdding an Expense!\n");
+		System.out.print("Enter the Expense Type(Food/Rent/Utility/Misc): ");
+		expenseType = input.nextLine();
+		System.out.print("Enter the Expense Name: ");
+		expenseName = input.nextLine();
+		System.out.print("Enter the date the Expense was made: ");
+		date = input.next();
+		System.out.print("Enter the time the Expense was made: ");
+		time = input.next();
+		System.out.print("Enter the cost of the Expense: $");
+		cost = input.nextDouble();
+		System.out.print("Finally, enter an Expense Number: ");
+		expenseID = input.next();
+		System.out.println("\n" + expenseName + " was added! It is stored under Expense Number: " + expenseID);
+
+		return new Expense(expenseID, expenseName, expenseType, date, time, cost);
+	}
+
+}
